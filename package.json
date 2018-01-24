@@ -1,0 +1,21 @@
+{
+  "name": "weather",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.html",
+  "dependencies": {
+    "cssnano": "^3.10.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "uglifyjs service-worker.js -o dist/service-worker.js & uglifyjs scripts/app.js -o dist/scripts/app.js & postcss styles/inline.css > dist/styles/inline.css & html-minifier index.html --collapse-whitespace --remove-comments -o dist/index.html"
+  },
+  "keywords": [
+    "weather",
+    "pwa",
+    "offline"
+  ],
+  "author": "Blake Zhang",
+  "license": "ISC"
+}
