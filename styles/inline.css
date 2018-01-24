@@ -231,16 +231,30 @@ body {
   padding-top: 20px;
   font-size: 1.25em; }
 
+.dialog-nudge {
+  background: #ec971f;
+  padding: 8px 0;
+  font-weight: bold;
+}
+
 .dialog-body {
   padding-top: 20px;
-  padding-bottom: 24px; }
+  padding-bottom: 10px; }
   .dialog-body select {
-    width: 100%;
-    font-size: 2em; }
+    width: 100%; }
 
 .dialog-buttons {
   padding: 8px !important;
   float: right; }
+
+.dialog-body-location {
+  margin-top: 10px;
+  text-align: center;
+}
+
+.dialog-button {
+  padding: 6px 15px;
+  font-size: 1em; }
 
 .card {
   padding: 16px;

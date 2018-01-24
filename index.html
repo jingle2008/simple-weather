@@ -149,13 +149,21 @@
 
   <div class="dialog-container">
     <div class="dialog">
+      <div class="dialog-nudge" hidden>
+        Location access is needed to find your city!
+      </div>
       <div class="dialog-title">Add new city</div>
       <div class="dialog-body">
-        <select id="selectCityToAdd"></select>
+        <div class="dialog-body-search">
+          <select id="selectCityToAdd"></select>
+        </div>
+        <div class="dialog-body-location" hidden>
+          <button id="useMyLocation" class="dialog-button">Use my location</button>
+        </div>
       </div>
       <div class="dialog-buttons">
-        <button id="butAddCity" class="button">Add</button>
-        <button id="butAddCancel" class="button">Cancel</button>
+        <button id="butAddCity" class="dialog-button">Add</button>
+        <button id="butAddCancel" class="dialog-button">Cancel</button>
       </div>
     </div>
   </div>

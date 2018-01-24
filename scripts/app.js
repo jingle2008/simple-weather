@@ -24,6 +24,7 @@
     cardTemplate: document.querySelector('.cardTemplate'),
     container: document.querySelector('.main'),
     addDialog: document.querySelector('.dialog-container'),
+    addButton: document.getElementById('butAddCity'),
     daysOfWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
   };
 
@@ -66,6 +67,10 @@
     app.toggleAddDialog(false);
   });
 
+  document.getElementById('useMyLocation').addEventListener('click', function() {
+    app.useMyLocation();
+  });
+
   app.container.addEventListener('click', function(e) {
     if (e.target.type === 'button') {
       app.removeForecast(e.target.id);
@@ -82,9 +87,34 @@
   // Toggles the visibility of the add new city dialog.
   app.toggleAddDialog = function(visible) {
     if (visible) {
+      app.toggleDialogNudge(false);
+      app.selectCityInDialog(null);
       app.addDialog.classList.add('dialog-container--visible');
     } else {
       app.addDialog.classList.remove('dialog-container--visible');
+    }
+  };
+
+  app.toggleDialogNudge = function(visible) {
+    var nudge = app.addDialog.querySelector('.dialog-nudge');
+    if (visible) {
+      nudge.removeAttribute('hidden');
+    } else {
+      nudge.setAttribute('hidden', '');
+    }
+  };
+
+  app.selectCityInDialog = function(city) {
+    var selector = $('#selectCityToAdd');
+    if (city) {
+      if (selector.find("option[value='" + city + "']").length) {
+        selector.val(city).trigger('change');
+      } else { 
+        var newOption = new Option(city, city, true, true);
+        selector.append(newOption).trigger('change');
+      }
+    } else {
+      selector.val(null).trigger('change');
     }
   };
 
@@ -96,7 +126,8 @@
 
     // update application state.
     delete app.visibleCards[key];
-    var index = app.selectedCities.findIndex(function(c) { return c.key === key; });
+    var index = app.selectedCities
+      .findIndex(function(c) { return c.key === key; });
     if (index !== -1) {
       app.selectedCities.splice(index, 1);
       app.saveSelectedCities();
@@ -199,6 +230,11 @@
       app.container.removeAttribute('hidden');
       app.isLoading = false;
     }
+  };
+
+  app.useMyLocation = function() {
+    getUserLocation()
+      .then(app.selectCityInDialog);
   };
 
 
@@ -431,13 +467,14 @@
     document.getElementsByTagName("head")[0].appendChild(script);
   }
 
-  window.onload = function () {
+  function prepareCitySelection() {
     loadScript('https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js', function () {
       loadScript('https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js', function () {
         loadCss('https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css');
 
         var baseUrl = 'https://supercoolweather.firebaseapp.com/';
-        $('#selectCityToAdd').select2({
+        var citySelector = $('#selectCityToAdd');
+        citySelector.select2({
           placeholder: 'Type to search',
           minimumInputLength: 1,
           ajax: {
@@ -456,8 +493,103 @@
               };
             }
           }
+        })
+        .on('change', function(){
+          if (citySelector.select2('data').length) {
+            app.addButton.removeAttribute('disabled');
+          } else {
+            app.addButton.setAttribute('disabled', '');
+          }
         });
       });
     });
+  }
+
+  if (navigator.geolocation) {
+    document.querySelector('.dialog-body-location')
+      .removeAttribute('hidden');
+  }
+
+  function getGeoLocation(timeout) {
+    return new Promise(function(resolve, reject) {
+      var geoOptions = { timeout: timeout };
+
+      var geoSuccess = function(position) {
+        resolve(position.coords);
+      };
+
+      var geoError = function(error) {
+        reject(error);
+      };
+
+      navigator.geolocation.getCurrentPosition(
+        geoSuccess, geoError, geoOptions);
+    });
+  }
+
+  function getAddresses(coords) {
+    var url = 'https://maps.googleapis.com/maps/api/geocode/json?'
+      + 'latlng=' + coords.latitude + ',' + coords.longitude
+      + '&key=AIzaSyBFZ6FcacXwwCTzBwPkoOe7T99Jbaw8JNA';
+
+    return new Promise(function(resolve, reject) {
+      var request = new XMLHttpRequest();
+      request.onreadystatechange = function() {
+        if (request.readyState === XMLHttpRequest.DONE) {
+          if (request.status === 200) {
+            resolve(JSON.parse(request.response).results);
+          } else {
+            reject(request.response);
+          }
+        }
+      };
+      request.open('GET', url);
+      request.send();
+    });
+  }
+
+  function getCityName(addresses) {
+    var address = addresses.find(function(c) { 
+      return c.types[0] === 'locality';
+    });
+
+    if (address) {
+      var city = address.address_components
+        .find(function(c) {
+          return c.types[0] === 'locality';
+        });
+      var state = address.address_components
+        .find(function(c) {
+          return c.types[0] === 'administrative_area_level_1';
+        });
+
+      if (city && state) {
+        return city.short_name + ', ' + state.short_name;
+      }
+    }
+
+    throw new Error('Can not parse current address.');
+  }
+
+  function getUserLocation() {
+    return getGeoLocation(10 * 1000)
+      .then(function(coords) {
+        app.toggleDialogNudge(false);
+        return getAddresses(coords);
+      })
+      .then(getCityName)
+      .catch(function(error) {
+        console.log('Error occurred. Error: ' + error);
+        switch(error.code) {
+          case error.TIMEOUT:
+            // The user didn't accept the callout
+            app.toggleDialogNudge(true);
+            break;
+        }
+      });
+  }
+
+  window.onload = function () {
+    prepareCitySelection();
   };
 })();
